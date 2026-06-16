@@ -30,7 +30,7 @@
         wait: yes
         no_reboot: "{{ reboot_flag == 'false' }}"
       register: ami_output
-      ignore_errors: true
+      
 
     - name: Extract AMI ID
       set_fact:
