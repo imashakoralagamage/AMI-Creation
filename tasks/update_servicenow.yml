@@ -36,7 +36,7 @@
   when: ami_status == "failed"
 
 
-# ✅ INCIDENT (safe)
+# ✅ INCIDENT (clean)
 - name: Create Incident
   uri:
     url: "https://{{ snow_instance }}/api/now/table/incident"
@@ -52,4 +52,5 @@
       caller_id: "admin"
       category: "software"
   when: ami_status == "failed"
-  ignore_errors: true
+  register: incident_result
+  failed_when: false

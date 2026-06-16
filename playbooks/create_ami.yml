@@ -1,5 +1,5 @@
 ---
-# PLAY 1: Fetch ServiceNow Data
+# ✅ PLAY 1: Fetch ServiceNow Data
 - name: Fetch ServiceNow Data
   hosts: localhost
   gather_facts: false
@@ -11,7 +11,7 @@
     - include_tasks: ../tasks/fetch_servicenow.yml
 
 
-# PLAY 2: Create AMI
+# ✅ PLAY 2: Create AMI
 - name: Create AMI
   hosts: localhost
   gather_facts: false
@@ -22,7 +22,7 @@
       set_fact:
         final_ami_name: "{{ ami_name }}-{{ lookup('pipe','date +%Y%m%d%H%M%S') }}"
 
-    - name: Create AMI using module ✅
+    - name: Create AMI
       amazon.aws.ec2_ami:
         instance_id: "{{ instance_id }}"
         name: "{{ final_ami_name }}"
@@ -41,6 +41,10 @@
       set_fact:
         ami_status: "{{ 'success' if (ami_output.failed is not defined or not ami_output.failed) else 'failed' }}"
 
+    - name: Show AWS full error
+      debug:
+        var: ami_output
+
     - name: Debug output
       debug:
         msg:
@@ -49,7 +53,7 @@
           - "AMI ID: {{ ami_id | default('N/A') }}"
 
 
-# PLAY 3: Update ServiceNow
+# ✅ PLAY 3: Update ServiceNow
 - name: Update ServiceNow
   hosts: localhost
   gather_facts: false
