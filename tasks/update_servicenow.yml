@@ -1,5 +1,5 @@
 ---
-# ✅ SUCCESS → Update SR Completed
+# ✅ SUCCESS
 - name: Update ServiceNow Success
   uri:
     url: "https://{{ snow_instance }}/api/now/table/sc_req_item/{{ ritm_sysid }}"
@@ -18,7 +18,7 @@
   when: ami_status == "success"
 
 
-# ✅ FAILURE → Update SR Failed
+# ✅ FAILURE
 - name: Update ServiceNow Failure
   uri:
     url: "https://{{ snow_instance }}/api/now/table/sc_req_item/{{ ritm_sysid }}"
@@ -32,11 +32,11 @@
       state: 4
       work_notes: >
         ❌ AMI creation failed  
-        Error: {{ ami_output.stderr }}
+        Error: {{ ami_output.msg | default('Unknown error') }}
   when: ami_status == "failed"
 
 
-# ✅ Create Incident (Diagram requirement)
+# ✅ INCIDENT (safe)
 - name: Create Incident
   uri:
     url: "https://{{ snow_instance }}/api/now/table/incident"
@@ -48,8 +48,8 @@
     body_format: json
     body:
       short_description: "AMI creation failed"
-      description: "{{ ami_output.stderr }}"
+      description: "{{ ami_output.msg | default('Unknown error') }}"
       caller_id: "admin"
       category: "software"
   when: ami_status == "failed"
-  ignore_errors: yes ✅
+  ignore_errors: true

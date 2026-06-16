@@ -1,5 +1,5 @@
 ---
-# ✅ PLAY 1: Fetch ServiceNow Data
+# PLAY 1: Fetch ServiceNow Data
 - name: Fetch ServiceNow Data
   hosts: localhost
   gather_facts: false
@@ -11,42 +11,37 @@
     - include_tasks: ../tasks/fetch_servicenow.yml
 
 
-# ✅ PLAY 2: Create AMI (AAP SAFE ✅)
+# PLAY 2: Create AMI
 - name: Create AMI
   hosts: localhost
   gather_facts: false
 
   tasks:
 
-    # ✅ Generate unique AMI name
     - name: Generate unique AMI name
       set_fact:
         final_ami_name: "{{ ami_name }}-{{ lookup('pipe','date +%Y%m%d%H%M%S') }}"
 
-    # ✅ Create AMI using Ansible AWS module (NO CLI ✅)
-    - name: Create AMI
+    - name: Create AMI using module ✅
       amazon.aws.ec2_ami:
         instance_id: "{{ instance_id }}"
         name: "{{ final_ami_name }}"
         region: "{{ region }}"
         wait: yes
-        reboot: "{{ reboot_flag == 'true' }}"
+        no_reboot: "{{ reboot_flag == 'false' }}"
       register: ami_output
       ignore_errors: true
 
-    # ✅ Extract AMI ID properly
     - name: Extract AMI ID
       set_fact:
         ami_id: "{{ ami_output.image_id }}"
       when: ami_output.failed is not defined or not ami_output.failed
 
-    # ✅ Set status
     - name: Set Status
       set_fact:
         ami_status: "{{ 'success' if (ami_output.failed is not defined or not ami_output.failed) else 'failed' }}"
 
-    # ✅ Debug output
-    - name: Show AMI result
+    - name: Debug output
       debug:
         msg:
           - "AMI Name: {{ final_ami_name }}"
@@ -54,7 +49,7 @@
           - "AMI ID: {{ ami_id | default('N/A') }}"
 
 
-# ✅ PLAY 3: Update ServiceNow
+# PLAY 3: Update ServiceNow
 - name: Update ServiceNow
   hosts: localhost
   gather_facts: false
