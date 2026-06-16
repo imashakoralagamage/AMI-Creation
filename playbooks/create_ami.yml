@@ -1,0 +1,65 @@
+---
+# PLAY 1: Fetch ServiceNow Data
+- name: Fetch ServiceNow Data
+  hosts: local
+  gather_facts: false
+
+  vars_files:
+    - ../vars/vars.yml
+
+  tasks:
+    - include_tasks: ../tasks/fetch_servicenow.yml
+
+
+# PLAY 2: Create AMI
+- name: Create AMI
+  hosts: local
+  gather_facts: false
+
+  tasks:
+
+    # ✅ Unique AMI name (avoid duplicate)
+    - name: Generate unique AMI name
+      set_fact:
+        final_ami_name: "{{ ami_name }}-{{ lookup('pipe','date +%Y%m%d%H%M%S') }}"
+
+    # ✅ Create AMI
+    - name: Create AMI
+      command: >
+        aws ec2 create-image
+        --instance-id {{ instance_id }}
+        --name {{ final_ami_name }}
+        --region {{ region }}
+        {% if reboot_flag == "false" %} --no-reboot {% endif %}
+      register: ami_output
+      ignore_errors: yes
+
+    # ✅ Extract AMI ID
+    - name: Extract AMI ID
+      set_fact:
+        ami_id: "{{ ami_output.stdout | from_json | json_query('ImageId') }}"
+      when: ami_output.rc == 0
+
+    # ✅ Set status
+    - name: Set Status
+      set_fact:
+        ami_status: "{{ 'success' if ami_output.rc == 0 else 'failed' }}"
+
+    # Debug
+    - name: Show AMI result
+      debug:
+        msg:
+          - "AMI Name: {{ final_ami_name }}"
+          - "Status: {{ ami_status }}"
+          - "AMI ID: {{ ami_id | default('N/A') }}"
+
+# ✅ PLAY 3: Update ServiceNow
+- name: Update ServiceNow
+  hosts: local
+  gather_facts: false
+
+  vars_files:
+    - ../vars/vars.yml
+
+  tasks:
+    - include_tasks: ../tasks/update_servicenow.yml

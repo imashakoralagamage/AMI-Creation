@@ -1,0 +1,73 @@
+---
+# STEP 1: Fetch RITM
+- name: Fetch RITM
+  uri:
+    url: "https://{{ snow_instance }}/api/now/table/sc_req_item?sysparm_query=number={{ ritm_number }}"
+    method: GET
+    user: "{{ snow_user }}"
+    password: "{{ snow_password }}"
+    force_basic_auth: yes
+    validate_certs: no
+  register: ritm_result
+
+# STEP 2: Get sys_id
+- name: Set sys_id
+  set_fact:
+    ritm_sysid: "{{ ritm_result.json.result[0].sys_id }}"
+
+# STEP 3: Fetch variables
+- name: Fetch variable mappings
+  uri:
+    url: "https://{{ snow_instance }}/api/now/table/sc_item_option_mtom?sysparm_query=request_item={{ ritm_sysid }}"
+    method: GET
+    user: "{{ snow_user }}"
+    password: "{{ snow_password }}"
+    force_basic_auth: yes
+    validate_certs: no
+  register: mtom_result
+
+# STEP 4: Fetch values
+- name: Fetch variable values
+  uri:
+    url: "https://{{ snow_instance }}/api/now/table/sc_item_option/{{ item.sc_item_option.value }}"
+    method: GET
+    user: "{{ snow_user }}"
+    password: "{{ snow_password }}"
+    force_basic_auth: yes
+    validate_certs: no
+  loop: "{{ mtom_result.json.result }}"
+  register: var_details
+
+# STEP 5: Extract values
+- name: Set AMI variables
+  set_fact:
+    instance_id: >-
+      {{ (var_details.results | map(attribute='json.result.value')
+         | select('search','^i-') | list | first) }}
+
+    region: >-
+      {{ (var_details.results | map(attribute='json.result.value')
+         | select('search','ap-') | list | first) }}
+
+    ami_name: >-
+      {{ (var_details.results | map(attribute='json.result.value')
+         | list | select('search','ami') | list | first) }}
+
+    reboot_flag: >-
+      {{ 'true' if 'Yes' in (var_details.results | map(attribute='json.result.value') | list)
+         else 'false' }}
+
+# STEP 6: Validate input ✅
+- name: Validate instance_id
+  fail:
+    msg: "Instance ID missing!"
+  when: instance_id == ""
+
+# Debug
+- name: Show values
+  debug:
+    msg:
+      - "Instance ID = {{ instance_id }}"
+      - "Region = {{ region }}"
+      - "AMI Name = {{ ami_name }}"
+      - "Reboot = {{ reboot_flag }}"

@@ -1,0 +1,52 @@
+---
+# ✅ SUCCESS → Update SR Completed
+- name: Update ServiceNow Success
+  uri:
+    url: "https://{{ snow_instance }}/api/now/table/sc_req_item/{{ ritm_sysid }}"
+    method: PATCH
+    user: "{{ snow_user }}"
+    password: "{{ snow_password }}"
+    force_basic_auth: yes
+    validate_certs: no
+    body_format: json
+    body:
+      state: 3
+      work_notes: >
+        ✅ AMI created successfully  
+        AMI Name: {{ final_ami_name }}  
+        AMI ID: {{ ami_id }}
+  when: ami_status == "success"
+
+
+# ✅ FAILURE → Update SR Failed
+- name: Update ServiceNow Failure
+  uri:
+    url: "https://{{ snow_instance }}/api/now/table/sc_req_item/{{ ritm_sysid }}"
+    method: PATCH
+    user: "{{ snow_user }}"
+    password: "{{ snow_password }}"
+    force_basic_auth: yes
+    validate_certs: no
+    body_format: json
+    body:
+      state: 4
+      work_notes: >
+        ❌ AMI creation failed  
+        Error: {{ ami_output.stderr }}
+  when: ami_status == "failed"
+
+
+# ✅ Create Incident (Diagram requirement)
+- name: Create Incident
+  uri:
+    url: "https://{{ snow_instance }}/api/now/table/incident"
+    method: POST
+    user: "{{ snow_user }}"
+    password: "{{ snow_password }}"
+    force_basic_auth: yes
+    validate_certs: no
+    body_format: json
+    body:
+      short_description: "AMI creation failed"
+      description: "{{ ami_output.stderr }}"
+  when: ami_status == "failed"
