@@ -1,5 +1,5 @@
 ---
-# ✅ PLAY 1: Fetch ServiceNow Data
+# ✅ PLAY 1
 - name: Fetch ServiceNow Data
   hosts: localhost
   gather_facts: false
@@ -11,7 +11,7 @@
     - include_tasks: ../tasks/fetch_servicenow.yml
 
 
-# ✅ PLAY 2: Create AMI
+# ✅ PLAY 2
 - name: Create AMI
   hosts: localhost
   gather_facts: false
@@ -22,28 +22,38 @@
       set_fact:
         final_ami_name: "{{ ami_name }}-{{ lookup('pipe','date +%Y%m%d%H%M%S') }}"
 
+    # ✅ MAIN TASK (NO IGNORE — DEBUG MODE)
     - name: Create AMI
       amazon.aws.ec2_ami:
         instance_id: "{{ instance_id }}"
         name: "{{ final_ami_name }}"
         region: "{{ region }}"
         wait: yes
-        no_reboot: "{{ reboot_flag == 'false' }}"
+        no_reboot: false
       register: ami_output
-      
 
+    # ✅ DEBUG EVERYTHING (IMPORTANT)
+    - name: Show AWS full error (clean)
+      debug:
+        msg:
+          - "FAILED: {{ ami_output.failed | default('N/A') }}"
+          - "MSG: {{ ami_output.msg | default('N/A') }}"
+          - "EXCEPTION: {{ ami_output.exception | default('N/A') }}"
+
+    - name: Print raw output
+      debug:
+        var: ami_output
+
+    # ✅ Extract AMI ID
     - name: Extract AMI ID
       set_fact:
         ami_id: "{{ ami_output.image_id }}"
       when: ami_output.failed is not defined or not ami_output.failed
 
+    # ✅ Set Status
     - name: Set Status
       set_fact:
         ami_status: "{{ 'success' if (ami_output.failed is not defined or not ami_output.failed) else 'failed' }}"
-
-    - name: Show AWS full error
-      debug:
-        var: ami_output
 
     - name: Debug output
       debug:
@@ -53,7 +63,7 @@
           - "AMI ID: {{ ami_id | default('N/A') }}"
 
 
-# ✅ PLAY 3: Update ServiceNow
+# ✅ PLAY 3
 - name: Update ServiceNow
   hosts: localhost
   gather_facts: false
