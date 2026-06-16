@@ -13,7 +13,7 @@
 
 # ✅ PLAY 2
 - name: Create AMI
-  hosts: localhost
+  hosts: ec2_host
   gather_facts: false
 
   tasks:
@@ -65,7 +65,7 @@
 
 # ✅ PLAY 3
 - name: Update ServiceNow
-  hosts: localhost
+  hosts: ec2_host
   gather_facts: false
 
   vars_files:
